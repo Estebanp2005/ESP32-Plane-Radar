@@ -109,19 +109,28 @@ void refreshPortalParamValues() {
   snprintf(lon_buf, sizeof(lon_buf), "%.6f", services::location::lon());
   s_param_lat.setValue(lat_buf, kCoordParamLen);
   s_param_lon.setValue(lon_buf, kCoordParamLen);
+  
   snprintf(s_miles_checkbox_attrs, sizeof(s_miles_checkbox_attrs), "type=\"checkbox\"%s",
            ui::radar::useMiles() ? " checked" : "");
   s_param_miles.setValue("T", 2);
-    // Airport filters
+  
+  snprintf(s_runways_checkbox_attrs, sizeof(s_runways_checkbox_attrs),
+           "type=\"checkbox\"%s", ui::radar::showRunways() ? " checked" : "");
+  s_param_runways.setValue("T", 2);
+  
+  // Airport filters — IMPORTANT: update the HTML attributes based on current state
   snprintf(s_large_apt_attrs, sizeof(s_large_apt_attrs), "type=\"checkbox\"%s",
            services::airport_filters::showLargeAirports() ? " checked" : "");
   s_param_large_apt.setValue("T", 2);
+  
   snprintf(s_medium_apt_attrs, sizeof(s_medium_apt_attrs), "type=\"checkbox\"%s",
            services::airport_filters::showMediumAirports() ? " checked" : "");
   s_param_medium_apt.setValue("T", 2);
+  
   snprintf(s_small_apt_attrs, sizeof(s_small_apt_attrs), "type=\"checkbox\"%s",
            services::airport_filters::showSmallAirports() ? " checked" : "");
   s_param_small_apt.setValue("F", 2);
+  
   snprintf(s_military_apt_attrs, sizeof(s_military_apt_attrs), "type=\"checkbox\"%s",
            services::airport_filters::showMilitaryAirports() ? " checked" : "");
   s_param_military_apt.setValue("F", 2);
@@ -134,11 +143,19 @@ void onPortalParamsSaved() {
   }
   ui::radar::saveMilesFromPortal(s_param_miles.getValue());
   ui::radar::saveRunwaysFromPortal(s_param_runways.getValue());
+  
   services::airport_filters::saveFromPortal(
       s_param_large_apt.getValue(),
       s_param_medium_apt.getValue(),
       s_param_small_apt.getValue(),
       s_param_military_apt.getValue());
+  
+  Serial.printf("Portal saved: large=%s medium=%s small=%s military=%s\n",
+                s_param_large_apt.getValue(),
+                s_param_medium_apt.getValue(),
+                s_param_small_apt.getValue(),
+                s_param_military_apt.getValue());
+  
   refreshPortalParamValues();
 }
 
@@ -229,7 +246,7 @@ void resetWifiCredentials() {
   eraseWifiCredentials();
   services::location::clear();
   ui::radar::unitsReset();
-    services::airport_filters::clear();
+  services::airport_filters::clear();
   Serial.println("WiFi credentials, location, and units cleared");
 }
 
