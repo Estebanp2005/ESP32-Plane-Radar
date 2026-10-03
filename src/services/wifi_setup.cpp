@@ -121,19 +121,19 @@ void refreshPortalParamValues() {
   // Airport filters — IMPORTANT: update the HTML attributes based on current state
   snprintf(s_large_apt_attrs, sizeof(s_large_apt_attrs), "type=\"checkbox\"%s",
            services::airport_filters::showLargeAirports() ? " checked" : "");
-  s_param_large_apt.setValue("T", 2);
+  s_param_large_apt.setValue(services::airport_filters::showLargeAirports() ? "T" : "F", 2);
   
   snprintf(s_medium_apt_attrs, sizeof(s_medium_apt_attrs), "type=\"checkbox\"%s",
            services::airport_filters::showMediumAirports() ? " checked" : "");
-  s_param_medium_apt.setValue("T", 2);
+  s_param_medium_apt.setValue(services::airport_filters::showMediumAirports() ? "T" : "F", 2);
   
-  snprintf(s_small_apt_attrs, sizeof(s_small_apt_attrs), "type=\"checkbox\"%s",
-           services::airport_filters::showSmallAirports() ? " checked" : "");
-  s_param_small_apt.setValue("F", 2);
-  
-  snprintf(s_military_apt_attrs, sizeof(s_military_apt_attrs), "type=\"checkbox\"%s",
-           services::airport_filters::showMilitaryAirports() ? " checked" : "");
-  s_param_military_apt.setValue("F", 2);
+snprintf(s_small_apt_attrs, sizeof(s_small_apt_attrs), "type=\"checkbox\"%s",
+         services::airport_filters::showSmallAirports() ? " checked" : "");
+s_param_small_apt.setValue(services::airport_filters::showSmallAirports() ? "T" : "F", 2);
+
+snprintf(s_military_apt_attrs, sizeof(s_military_apt_attrs), "type=\"checkbox\"%s",
+         services::airport_filters::showMilitaryAirports() ? " checked" : "");
+s_param_military_apt.setValue(services::airport_filters::showMilitaryAirports() ? "T" : "F", 2);
 }
 
 void onPortalParamsSaved() {
