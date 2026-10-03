@@ -8,6 +8,7 @@
 #include "data/large_airports.h"
 #include "hardware/display_font.h"
 #include "services/radar_location.h"
+#include "services/airport_filters.h"
 #include "ui/radar_range.h"
 #include "ui/radar_theme.h"
 

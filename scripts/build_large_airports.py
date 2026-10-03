@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Build runway dataset from OurAirports (large_airport only)."""
+"""Build runway dataset from OurAirports with configurable airport types."""
 
 from __future__ import annotations
 
 import csv
 import io
+import sys
 import urllib.request
 from pathlib import Path
 
@@ -20,6 +21,7 @@ RUNWAYS_URL = (
     "https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/"
     "runways.csv"
 )
+
 
 def fetch_csv(url: str) -> list[dict[str, str]]:
     with urllib.request.urlopen(url, timeout=60) as resp:
@@ -58,7 +60,7 @@ def is_helipad(row: dict[str, str]) -> bool:
     return length_ft < 2500
 
 
-def build_dataset() -> tuple[
+def build_dataset(allowed_types: set[str]) -> tuple[
     list[tuple[str, int, int]],
     list[tuple[int, int, int, int, int, int]],
 ]:
@@ -67,7 +69,7 @@ def build_dataset() -> tuple[
 
     large_idents: dict[str, tuple[int, int]] = {}
     for a in airports:
-        if a.get("type") != "large_airport":
+        if a.get("type") not in allowed_types:  # CHANGED HERE
             continue
         ident = (a.get("ident") or "").strip()
         if len(ident) != 4:
@@ -191,7 +193,16 @@ def render_cpp(
 
 
 def main() -> int:
-    airport_rows, segments = build_dataset()
+    # Default: only large_airport. Pass args to include others:
+    # python3 build_large_airports.py large_airport medium_airport
+    if len(sys.argv) > 1:
+        allowed_types = set(sys.argv[1:])
+        print(f"Building with airport types: {allowed_types}")
+    else:
+        allowed_types = {"large_airport"}
+        print("Building with default airport types: large_airport")
+
+    airport_rows, segments = build_dataset(allowed_types)
     header = render_header(len(airport_rows), len(segments))
     cpp = render_cpp(airport_rows, segments)
 
