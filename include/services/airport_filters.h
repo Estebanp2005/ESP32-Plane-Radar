@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 namespace services::airport_filters {
 
 void init();
