@@ -67,9 +67,9 @@ def build_dataset(allowed_types: set[str]) -> tuple[
     airports = fetch_csv(AIRPORTS_URL)
     runways = fetch_csv(RUNWAYS_URL)
 
-    large_idents: dict[str, tuple[int, int]] = {}
+    airport_idents: dict[str, tuple[int, int]] = {}
     for a in airports:
-        if a.get("type") not in allowed_types:  # CHANGED HERE
+        if a.get("type") not in allowed_types:
             continue
         ident = (a.get("ident") or "").strip()
         if len(ident) != 4:
@@ -78,10 +78,10 @@ def build_dataset(allowed_types: set[str]) -> tuple[
         lon = coord_e7(a.get("longitude_deg"))
         if lat is None or lon is None:
             continue
-        large_idents[ident] = (lat, lon)
+        airport_idents[ident] = (lat, lon)
 
     airport_rows = sorted(
-        (ident, lat, lon) for ident, (lat, lon) in large_idents.items()
+        (ident, lat, lon) for ident, (lat, lon) in airport_idents.items()
     )
     airport_index = {ident: idx for idx, (ident, _, _) in enumerate(airport_rows)}
 
@@ -193,14 +193,13 @@ def render_cpp(
 
 
 def main() -> int:
-    # Default: only large_airport. Pass args to include others:
-    # python3 build_large_airports.py large_airport medium_airport
     if len(sys.argv) > 1:
         allowed_types = set(sys.argv[1:])
-        print(f"Building with airport types: {allowed_types}")
+        print(f"Building with airport types: {sorted(allowed_types)}")
     else:
-        allowed_types = {"large_airport"}
-        print("Building with default airport types: large_airport")
+        # Default to include large and medium airports so regional airports are present.
+        allowed_types = {"large_airport", "medium_airport"}
+        print("Building with default airport types: large_airport, medium_airport")
 
     airport_rows, segments = build_dataset(allowed_types)
     header = render_header(len(airport_rows), len(segments))
