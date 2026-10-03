@@ -22,6 +22,13 @@ RUNWAYS_URL = (
     "runways.csv"
 )
 
+AIRPORT_TYPE_MAP = {
+    "large_airport": 0,
+    "medium_airport": 1,
+    "small_airport": 2,
+    "military_airport": 3,
+}
+
 
 def fetch_csv(url: str) -> list[dict[str, str]]:
     with urllib.request.urlopen(url, timeout=60) as resp:
@@ -61,15 +68,16 @@ def is_helipad(row: dict[str, str]) -> bool:
 
 
 def build_dataset(allowed_types: set[str]) -> tuple[
-    list[tuple[str, int, int]],
+    list[tuple[str, int, int, int]],
     list[tuple[int, int, int, int, int, int]],
 ]:
     airports = fetch_csv(AIRPORTS_URL)
     runways = fetch_csv(RUNWAYS_URL)
 
-    airport_idents: dict[str, tuple[int, int]] = {}
+    airport_data: dict[str, tuple[int, int, int]] = {}
     for a in airports:
-        if a.get("type") not in allowed_types:
+        airport_type = a.get("type")
+        if airport_type not in allowed_types:
             continue
         ident = (a.get("ident") or "").strip()
         if len(ident) != 4:
@@ -78,12 +86,13 @@ def build_dataset(allowed_types: set[str]) -> tuple[
         lon = coord_e7(a.get("longitude_deg"))
         if lat is None or lon is None:
             continue
-        airport_idents[ident] = (lat, lon)
+        type_code = AIRPORT_TYPE_MAP.get(airport_type, 0)
+        airport_data[ident] = (lat, lon, type_code)
 
     airport_rows = sorted(
-        (ident, lat, lon) for ident, (lat, lon) in airport_idents.items()
+        (ident, lat, lon, type_code) for ident, (lat, lon, type_code) in airport_data.items()
     )
-    airport_index = {ident: idx for idx, (ident, _, _) in enumerate(airport_rows)}
+    airport_index = {ident: idx for idx, (ident, _, _, _) in enumerate(airport_rows)}
 
     segments: list[tuple[int, int, int, int, int, int]] = []
     for r in runways:
@@ -133,10 +142,18 @@ def render_header(airport_count: int, segment_count: int) -> str:
             "",
             "namespace data::large_airports {",
             "",
+            "enum class AirportType : uint8_t {",
+            "  kLarge = 0,",
+            "  kMedium = 1,",
+            "  kSmall = 2,",
+            "  kMilitary = 3,",
+            "};",
+            "",
             "struct Airport {",
             "  char ident[5];",
             "  int32_t lat_e7;",
             "  int32_t lon_e7;",
+            "  AirportType type;",
             "};",
             "",
             "struct Runway {",
@@ -161,7 +178,7 @@ def render_header(airport_count: int, segment_count: int) -> str:
 
 
 def render_cpp(
-    airport_rows: list[tuple[str, int, int]],
+    airport_rows: list[tuple[str, int, int, int]],
     segments: list[tuple[int, int, int, int, int, int]],
 ) -> str:
     lines = [
@@ -172,8 +189,8 @@ def render_cpp(
         "",
         "const Airport kAirports[] = {",
     ]
-    for ident, lat, lon in airport_rows:
-        lines.append(f'  {{"{ident}", {lat}, {lon}}},')
+    for ident, lat, lon, type_code in airport_rows:
+        lines.append(f'  {{"{ident}", {lat}, {lon}, AirportType({type_code})}},')
     lines += [
         "};",
         "",
@@ -197,7 +214,6 @@ def main() -> int:
         allowed_types = set(sys.argv[1:])
         print(f"Building with airport types: {sorted(allowed_types)}")
     else:
-        # Default to include large and medium airports so regional airports are present.
         allowed_types = {"large_airport", "medium_airport"}
         print("Building with default airport types: large_airport, medium_airport")
 
