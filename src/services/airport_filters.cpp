@@ -7,15 +7,12 @@ namespace services::airport_filters {
 
 namespace {
 
-// Use the same "radar" namespace as radar_location.cpp to keep all
-// radar-related prefs in one place
 constexpr char kPrefsNamespace[] = "radar";
 constexpr char kKeyLargeAirports[] = "apt_large";
 constexpr char kKeyMediumAirports[] = "apt_medium";
 constexpr char kKeySmallAirports[] = "apt_small";
 constexpr char kKeyMilitaryAirports[] = "apt_military";
 
-// Defaults: show large (commercial) and medium; hide small/military
 static bool s_show_large = true;
 static bool s_show_medium = true;
 static bool s_show_small = false;
@@ -25,7 +22,7 @@ static bool s_show_military = false;
 
 void init() {
   Preferences prefs;
-  prefs.begin(kPrefsNamespace, true);  // read-only
+  prefs.begin(kPrefsNamespace, true);
   if (prefs.isKey(kKeyLargeAirports)) {
     s_show_large = prefs.getBool(kKeyLargeAirports, true);
   }
@@ -51,14 +48,13 @@ bool showMilitaryAirports() { return s_show_military; }
 
 bool saveFromPortal(const char* large, const char* medium,
                     const char* small, const char* military) {
-  // Portal passes "T" for checked, empty string or "F" for unchecked
   s_show_large = (large && large[0] == 'T');
   s_show_medium = (medium && medium[0] == 'T');
   s_show_small = (small && small[0] == 'T');
   s_show_military = (military && military[0] == 'T');
 
   Preferences prefs;
-  if (!prefs.begin(kPrefsNamespace, false)) {  // read-write
+  if (!prefs.begin(kPrefsNamespace, false)) {
     Serial.println("airport_filters: failed to open NVS for writing");
     return false;
   }
@@ -85,13 +81,22 @@ void clear() {
   prefs.remove(kKeyMilitaryAirports);
   prefs.end();
 
-  // Reset to defaults
   s_show_large = true;
   s_show_medium = true;
   s_show_small = false;
   s_show_military = false;
 
   Serial.println("airport_filters cleared (reset to defaults)");
+}
+
+bool shouldShowAirportType(uint8_t airport_type) {
+  switch (airport_type) {
+    case 0: return s_show_large;
+    case 1: return s_show_medium;
+    case 2: return s_show_small;
+    case 3: return s_show_military;
+    default: return true;
+  }
 }
 
 }  // namespace services::airport_filters
